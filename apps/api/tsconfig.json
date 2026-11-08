@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // package.json "type": "commonjs" + nodenext => CommonJS output, which is
+    // what Nest's decorator/DI machinery is built and tested against.
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    // Nest DI reads constructor parameter types at runtime from the metadata
+    // these two flags emit.
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "types": ["node"]
+  },
+  "include": ["src"]
+}
