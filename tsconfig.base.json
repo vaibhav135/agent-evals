@@ -1,0 +1,17 @@
+{
+  // Shared strictness for every workspace. Apps extend this and add only
+  // what is specific to them (module system, decorators, DOM libs).
+  "compilerOptions": {
+    "target": "ES2023",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "sourceMap": true
+  }
+}

@@ -1,0 +1,19 @@
+# Private: assignment brief (not for the repo)
+Agent Evals Platform*.pdf
+
+# Dependencies & build output
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Secrets
+.env
+
+# Python (runner)
+__pycache__/
+.venv/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
