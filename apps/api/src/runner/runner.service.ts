@@ -10,6 +10,8 @@ import * as schema from '../db/schema';
 import { MAX_ATTEMPTS, RETRY_DELAYS_MS } from './decide-outcome';
 import { executeRun, markCompleteIfDone, type ExecuteDeps } from './execute-run';
 import { loadHermesEnv } from './hermes-env';
+import type { Sandbox } from './plan-run';
+import { ensureDockerSandbox } from './sandbox-check';
 import { claimNext, recoverStale, requeue, type ClaimedRun } from './queue';
 import { killDriver } from './spawn-driver';
 
@@ -49,6 +51,19 @@ export class RunnerService implements OnApplicationBootstrap, OnModuleDestroy {
       this.logger.error(`${(e as Error).message} Runner disabled.`);
       return;
     }
+    const sandbox: Sandbox =
+      this.env.SANDBOX === 'docker' ? { kind: 'docker', image: this.env.SANDBOX_IMAGE } : { kind: 'local' };
+    if (sandbox.kind === 'docker') {
+      try {
+        await ensureDockerSandbox(sandbox.image, (m) => this.logger.log(m));
+      } catch (e) {
+        // Refuse rather than silently fall back to running tools on the host.
+        this.logger.error(`${(e as Error).message} Runner disabled.`);
+        return;
+      }
+    } else {
+      this.logger.warn('SANDBOX=local: agent tools run on this machine and can read any file on it');
+    }
     await mkdir(this.env.RUNS_DIR, { recursive: true });
     const knownSkills = await this.loadSkillNames();
 
@@ -61,13 +76,14 @@ export class RunnerService implements OnApplicationBootstrap, OnModuleDestroy {
       skillsDir: this.env.SKILLS_DIR,
       knownSkills,
       keepRunDirs: this.env.KEEP_RUN_DIRS,
+      sandbox,
       log: (m) => this.logger.log(m),
     };
 
     const recovered = await recoverStale(this.db, MAX_ATTEMPTS);
     if (recovered) this.logger.warn(`Recovered ${recovered} run(s) left running by a previous process`);
     this.logger.log(
-      `Runner started: concurrency ${this.env.RUNNER_CONCURRENCY}, Hermes @ ${hermes.hermesCommit.slice(0, 7)}, ` +
+      `Runner started: concurrency ${this.env.RUNNER_CONCURRENCY}, sandbox ${sandbox.kind === 'docker' ? sandbox.image : 'local (host)'}, Hermes @ ${hermes.hermesCommit.slice(0, 7)}, ` +
         `${knownSkills.size} skill(s): ${[...knownSkills].join(', ') || 'none'}`,
     );
     void this.loop();

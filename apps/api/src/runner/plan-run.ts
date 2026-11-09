@@ -34,11 +34,20 @@ export interface RunTask {
   timeoutS: number;
 }
 
+/**
+ * Where the agent's file and terminal tools execute. Hermes does not confine
+ * them to the cwd (an outside path only gets a warning), so on the host the
+ * agent can read anything: the repo's skills, golden answers, other runs.
+ */
+export type Sandbox = { kind: 'docker'; image: string } | { kind: 'local' };
+
 export interface RunPaths {
   /** Fresh, empty directory owned by this run. */
   runDir: string;
   /** Where skill folders live in this repo (suites/skills/<name>/). */
   skillsSourceDir: string;
+  /** Platform-wide, so identical for both arms. */
+  sandbox: Sandbox;
 }
 
 /** Input for runner/driver.py (see its docstring). */
@@ -113,6 +122,7 @@ export function planRun(
       creation_nudge_interval: 0,
       ...(config.skillMode === 'pinned' && skills.length ? { auto_load: skills } : {}),
     },
+    terminal: terminalConfig(paths.sandbox, workspaceDir),
   };
 
   const spec: DriverSpec = {
@@ -150,6 +160,27 @@ export function planRun(
   }));
 
   return { homeDir, workspaceDir, specPath, outputPath, files, copies, spec };
+}
+
+/**
+ * Hermes's `terminal` section. With the docker backend its file tools
+ * (read_file, search_files, ...) also run inside the container, so mounting
+ * only the workspace confines everything the agent can touch. Skills and
+ * memory are read in-process from HERMES_HOME on the host, so they still work.
+ */
+function terminalConfig(sandbox: Sandbox, workspaceDir: string) {
+  if (sandbox.kind === 'local') return { backend: 'local', cwd: workspaceDir };
+  return {
+    backend: 'docker',
+    docker_image: sandbox.image,
+    docker_mount_cwd_to_workspace: true,
+    cwd: workspaceDir,
+    // Hermes defaults reuse one container across sessions AND processes;
+    // that would let one run see another's files.
+    container_persistent: false,
+    docker_persist_across_processes: false,
+    docker_network: false,
+  };
 }
 
 /** Workspace-relative, normalised, and unable to escape the workspace. */

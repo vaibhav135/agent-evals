@@ -18,7 +18,7 @@ import { computeCost } from '../pricing/cost';
 import { classifyRun, type RunClassification } from './classify';
 import { decideOutcome, type Decision } from './decide-outcome';
 import { driverEnv, type HermesEnv } from './hermes-env';
-import { planRun } from './plan-run';
+import { planRun, type Sandbox } from './plan-run';
 import { requeue, type ClaimedRun } from './queue';
 import { spawnDriver } from './spawn-driver';
 import { normalizeResult, toSessionViews, type NormalizedRun } from './trace';
@@ -33,6 +33,7 @@ export interface ExecuteDeps {
   driverPath: string;
   skillsDir: string;
   knownSkills: ReadonlySet<string>;
+  sandbox: Sandbox;
   keepRunDirs: boolean;
   onSpawn?: (child: ChildProcess) => void;
   log?: (msg: string) => void;
@@ -58,7 +59,7 @@ export async function executeRun(deps: ExecuteDeps, claimed: ClaimedRun): Promis
     // 2. Plan + materialise. planRun throws on config errors (unknown skill, bad fixture path).
     let plan;
     try {
-      plan = planRun(config.data, task.data, { runDir, skillsSourceDir: deps.skillsDir }, deps.knownSkills);
+      plan = planRun(config.data, task.data, { runDir, skillsSourceDir: deps.skillsDir, sandbox: deps.sandbox }, deps.knownSkills);
     } catch (e) {
       return persist(deps, claimed, fatalConfig((e as Error).message), null, null, null);
     }

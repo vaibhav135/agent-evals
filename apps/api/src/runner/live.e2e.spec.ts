@@ -5,8 +5,8 @@
  * Spends real API credit (~$0.001). Skipped unless RUN_LIVE=1; run with
  * `bun run test:live`, which also needs runner/setup-hermes.sh to have run.
  */
-import { existsSync, mkdtempSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, mkdirSync, mkdtempSync } from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { eq, sql } from 'drizzle-orm';
@@ -18,6 +18,13 @@ import { setupTestDb } from '../testing/pg-test-db';
 import { executeRun } from './execute-run';
 import { loadHermesEnv } from './hermes-env';
 import { claimNext } from './queue';
+
+/** Under $HOME: colima / Docker Desktop only share $HOME with their VM. */
+function liveRunsDir(): string {
+  const parent = join(homedir(), '.cache');
+  mkdirSync(parent, { recursive: true });
+  return mkdtempSync(join(parent, 'live-runs-'));
+}
 
 const live = process.env.RUN_LIVE === '1' && !!process.env.TEST_DATABASE_URL;
 const REPO_ROOT = resolve(__dirname, '../../../..');
@@ -79,11 +86,13 @@ describe.skipIf(!live)('LIVE: one real run through the whole pipeline', () => {
         db,
         hermes: loadHermesEnv(join(REPO_ROOT, 'runner', '.hermes-env.json')),
         anthropicApiKey: process.env.ANTHROPIC_API_KEY!,
-        runsDir: mkdtempSync(join(tmpdir(), 'live-runs-')),
+        // Under $HOME: colima / Docker Desktop only share $HOME with the VM.
+        runsDir: liveRunsDir(),
         driverPath: join(REPO_ROOT, 'runner', 'driver.py'),
         skillsDir: mkdtempSync(join(tmpdir(), 'live-skills-')),
         knownSkills: new Set(),
         keepRunDirs: false,
+        sandbox: { kind: 'docker', image: 'python:3.13-slim' },
         log: (m) => console.log(m),
       },
       claimed!,
