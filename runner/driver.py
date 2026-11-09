@@ -108,6 +108,22 @@ def run_session(spec: dict, index: int, prompt: str) -> dict:
     return out
 
 
+def memory_snapshot() -> dict:
+    """MEMORY.md / USER.md as they are right now. Taken after each session:
+    the only point where "what did the agent carry into the next session"
+    can be observed, which is what explains a memory task's result."""
+    import os
+
+    home = os.environ.get("HERMES_HOME", "")
+    snap = {}
+    for name in ("MEMORY.md", "USER.md"):
+        path = os.path.join(home, "memories", name)
+        if os.path.isfile(path):
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                snap[name] = fh.read()
+    return snap
+
+
 def main() -> int:
     if len(sys.argv) != 2:
         print("usage: driver.py SPEC.json", file=sys.stderr)
@@ -118,6 +134,7 @@ def main() -> int:
     sessions = []
     for i, session in enumerate(spec["sessions"]):
         res = run_session(spec, i, session["prompt"])
+        res["memory_snapshot"] = memory_snapshot()
         sessions.append(res)
         if "exception" in res:
             break  # later sessions depend on earlier ones; stop at first crash
