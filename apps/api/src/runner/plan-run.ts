@@ -173,8 +173,11 @@ function terminalConfig(sandbox: Sandbox, workspaceDir: string) {
   return {
     backend: 'docker',
     docker_image: sandbox.image,
-    docker_mount_cwd_to_workspace: true,
-    cwd: workspaceDir,
+    // Explicit volume rather than docker_mount_cwd_to_workspace: that mode
+    // derives the host path from the process cwd / TERMINAL_CWD at container
+    // creation, so containers created later in a run had no workspace at all.
+    docker_volumes: [`${workspaceDir}:/workspace`],
+    cwd: '/workspace',
     // Hermes defaults reuse one container across sessions AND processes;
     // that would let one run see another's files.
     container_persistent: false,

@@ -165,9 +165,12 @@ describe('sandbox', () => {
     expect(hermesConfig(plan()).terminal).toEqual({
       backend: 'docker',
       docker_image: 'python:3.13-slim',
-      // The workspace (and nothing else) is bind-mounted at /workspace.
-      docker_mount_cwd_to_workspace: true,
-      cwd: '/runs/r1/workspace',
+      // The workspace (and nothing else) is bind-mounted at /workspace. An
+      // explicit volume, not docker_mount_cwd_to_workspace: that one follows the
+      // process cwd / TERMINAL_CWD, and containers created later in a run (other
+      // task ids) came up without the mount: the agent saw an empty workspace.
+      docker_volumes: ['/runs/r1/workspace:/workspace'],
+      cwd: '/workspace',
       // A fresh container per run: no state shared between runs or arms.
       container_persistent: false,
       docker_persist_across_processes: false,
