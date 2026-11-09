@@ -1,0 +1,6 @@
+{
+  // Used by `nest build` (picked up automatically). Tests stay out of dist/;
+  // `bun run typecheck` still uses tsconfig.json, which covers them.
+  "extends": "./tsconfig.json",
+  "exclude": ["src/**/*.spec.ts"]
+}
