@@ -17,3 +17,9 @@ __pycache__/
 .DS_Store
 .idea/
 .vscode/
+
+# Hermes source checkout + its tool store (created by runner/setup-hermes.sh)
+runner/.hermes/
+runner/.hermes-tools/
+runner/.hermes-setup-home/
+runner/.hermes-env.json
