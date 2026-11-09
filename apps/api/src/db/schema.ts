@@ -152,6 +152,8 @@ export const runs = pgTable(
     status: runStatus('status').notNull().default('queued'),
     /** Incremented on each claim; infra_error runs are retried up to a limit. */
     attempt: integer('attempt').notNull().default(0),
+    /** Not claimable before this time: retries back off (15s, 60s, 4min) instead of hammering a rate-limited provider. */
+    availableAt: timestamp('available_at', { withTimezone: true }).notNull().defaultNow(),
     claimedAt: timestamp('claimed_at', { withTimezone: true }),
     startedAt: timestamp('started_at', { withTimezone: true }),
     finishedAt: timestamp('finished_at', { withTimezone: true }),
@@ -175,8 +177,8 @@ export const runs = pgTable(
   (t) => [
     // Expanding an experiment twice can't duplicate trials and silently inflate N.
     unique('runs_arm_task_trial_uq').on(t.armId, t.taskId, t.trialIndex),
-    // The worker's "claim next queued run" query (FOR UPDATE SKIP LOCKED).
-    index('runs_queue_idx').on(t.status, t.createdAt),
+    // The worker's "claim next due queued run" query (FOR UPDATE SKIP LOCKED).
+    index('runs_queue_idx').on(t.status, t.availableAt, t.createdAt),
     index('runs_experiment_idx').on(t.experimentId),
   ],
 );
