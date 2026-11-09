@@ -23,7 +23,7 @@ const base = {
   description: z.string().optional(),
 };
 
-export const ContainsGrader = z.object({
+export const ContainsGrader = z.strictObject({
   type: z.literal('contains'),
   target: GraderTarget.default('final_response'),
   value: z.string().min(1),
@@ -31,7 +31,7 @@ export const ContainsGrader = z.object({
   ...base,
 });
 
-export const RegexGrader = z.object({
+export const RegexGrader = z.strictObject({
   type: z.literal('regex'),
   target: GraderTarget.default('final_response'),
   pattern: z.string().min(1).refine(
@@ -43,7 +43,7 @@ export const RegexGrader = z.object({
 });
 
 export const JsonFieldGrader = z
-  .object({
+  .strictObject({
     type: z.literal('json_field'),
     target: z.string().regex(/^file:.+/, 'must be "file:<path>"'),
     /** Dot/bracket path into the JSON, e.g. "leads[0].tier". */
@@ -56,13 +56,13 @@ export const JsonFieldGrader = z
     message: 'set exactly one of "equals" or "oneOf"',
   });
 
-export const FileExistsGrader = z.object({
+export const FileExistsGrader = z.strictObject({
   type: z.literal('file_exists'),
   path: z.string().min(1),
   ...base,
 });
 
-export const ToolCalledGrader = z.object({
+export const ToolCalledGrader = z.strictObject({
   type: z.literal('tool_called'),
   /** Hermes tool name, e.g. "skill_view" (did the agent open the skill?). */
   tool: z.string().min(1),
@@ -71,7 +71,7 @@ export const ToolCalledGrader = z.object({
   ...base,
 });
 
-export const LlmJudgeGrader = z.object({
+export const LlmJudgeGrader = z.strictObject({
   type: z.literal('llm_judge'),
   target: GraderTarget.default('final_response'),
   rubric: z.string().min(1),
@@ -80,6 +80,8 @@ export const LlmJudgeGrader = z.object({
   ...base,
 });
 
+// Grader objects are strict: an unknown key (e.g. a typo like `caseSensitve`)
+// is an error, not a silently ignored option that leaves the default in place.
 // discriminatedUnion picks the schema from `type`, so `type: regx` fails with
 // a clear message instead of a vague "no union member matched".
 export const GraderSpec = z.discriminatedUnion('type', [
