@@ -1,0 +1,8 @@
+# Stock Hermes on Claude Haiku 5.5: file + terminal tools, bundled skills only, no memory.
+slug: haiku-baseline
+name: Haiku 5.5 baseline
+description: Stock Hermes, file and terminal tools, no extra skills, memory off.
+model: claude-haiku-5.5
+toolsets: [file, terminal]
+maxIterations: 30
+runBudgetS: 300

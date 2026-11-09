@@ -1,0 +1,9 @@
+# Same as the baseline, with Hermes memory on (carried across a task's sessions).
+slug: haiku-memory
+name: Haiku 5.5 + memory
+description: Baseline plus Hermes memory (empty at start, persists across sessions).
+model: claude-haiku-5.5
+toolsets: [file, terminal]
+memoryMode: on
+maxIterations: 30
+runBudgetS: 300

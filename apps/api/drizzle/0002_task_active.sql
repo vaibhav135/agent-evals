@@ -1,0 +1,1 @@
+ALTER TABLE "tasks" ADD COLUMN "active" boolean DEFAULT true NOT NULL;
