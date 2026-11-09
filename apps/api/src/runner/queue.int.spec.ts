@@ -3,14 +3,12 @@
  * Skipped unless TEST_DATABASE_URL is set; run with `bun run test:int`.
  * Uses its own database so it never touches dev data.
  */
-import { resolve } from 'node:path';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { eq, sql } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { migrate } from 'drizzle-orm/node-postgres/migrator';
-import { Client, Pool } from 'pg';
+import type { Pool } from 'pg';
 import * as schema from '../db/schema';
 import type { Db } from '../db/db.module';
+import { setupTestDb } from '../testing/pg-test-db';
 import { claimNext, recoverStale, requeue } from './queue';
 
 const url = process.env.TEST_DATABASE_URL;
@@ -20,18 +18,7 @@ describe.skipIf(!url)('run queue (Postgres)', () => {
   let db: Db;
 
   beforeAll(async () => {
-    // Create the test database on first use.
-    const target = new URL(url!);
-    const admin = new Client({ connectionString: url!.replace(target.pathname, '/postgres') });
-    await admin.connect();
-    const dbName = target.pathname.slice(1);
-    const exists = await admin.query('select 1 from pg_database where datname = $1', [dbName]);
-    if (exists.rowCount === 0) await admin.query(`create database "${dbName}"`);
-    await admin.end();
-
-    pool = new Pool({ connectionString: url, max: 20 });
-    db = drizzle(pool, { schema });
-    await migrate(db, { migrationsFolder: resolve(__dirname, '../../drizzle') });
+    ({ pool, db } = await setupTestDb(url!));
   });
 
   afterAll(async () => {
