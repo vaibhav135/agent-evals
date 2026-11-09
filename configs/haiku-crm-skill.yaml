@@ -1,0 +1,10 @@
+# The candidate arm of the main experiment: the baseline plus the CRM playbook
+# skill. Must match haiku-baseline in every other field (shipped-suites.spec).
+slug: haiku-crm-skill
+name: Haiku 5.5 + CRM skill
+description: Baseline plus the crm-lead-handling skill, installed (the agent decides when to load it).
+model: claude-haiku-5.5
+skills: [crm-lead-handling]
+toolsets: [file, terminal]
+maxIterations: 30
+runBudgetS: 300
