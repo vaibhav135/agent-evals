@@ -80,6 +80,8 @@ export const tasks = pgTable(
     graders: jsonb('graders').$type<unknown[]>().notNull(),
     timeoutS: integer('timeout_s').notNull().default(300),
     maxIterations: integer('max_iterations').notNull().default(30),
+    /** False once a task is removed from its suite file. Kept (not deleted) because runs reference it. */
+    active: boolean('active').notNull().default(true),
     createdAt: createdAt(),
   },
   (t) => [unique('tasks_suite_slug_uq').on(t.suiteId, t.slug)],
