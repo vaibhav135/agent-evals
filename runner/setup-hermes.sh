@@ -26,6 +26,12 @@ export HERMES_RUNTIME_DIR="$RUNNER_DIR/.hermes-tools"
 INSTALL_HOME="$RUNNER_DIR/.hermes-setup-home"
 export HERMES_HOME="$INSTALL_HOME"
 STAMP="$INSTALL_HOME/installed-commit"
+# Optional Hermes extras we need beyond its default ([all]) set. Provider SDKs
+# are opt-in extras, and Hermes refuses to lazy-install them into a venv that
+# is launched directly (as our runs are), so install them explicitly here.
+EXTRAS=(anthropic)
+# The stamp records commit AND extras, so changing either triggers a reinstall.
+STAMP_VALUE="$COMMIT extras:${EXTRAS[*]}"
 ENV_FILE="$RUNNER_DIR/.hermes-env.json"
 mkdir -p "$HERMES_RUNTIME_DIR" "$INSTALL_HOME"
 
@@ -86,7 +92,7 @@ e = json.load(open(sys.argv[1]))
 print(e["python"], e["pythonPath"], os.pathsep.join(e["pathPrefix"]))' "$ENV_FILE")
   env -i HOME="$HOME" PATH="$path_prefix:/usr/bin:/bin" PYTHONPATH="$pypath" \
     HERMES_RUNTIME_DIR="$HERMES_RUNTIME_DIR" HERMES_HOME="$home" \
-    "$py" -c "import sys; from run_agent import AIAgent; print('AIAgent import OK on Python', sys.version.split()[0])"
+    "$py" -c "import sys, anthropic; from run_agent import AIAgent; print('AIAgent + anthropic', anthropic.__version__, 'import OK on Python', sys.version.split()[0])"
   local status=$?
   rm -rf "$home"
   return $status
@@ -98,7 +104,7 @@ print(e["python"], e["pythonPath"], os.pathsep.join(e["pathPrefix"]))' "$ENV_FIL
 # `cache-control: no-cache` and fails intermittently or per-region (upstream
 # #147860; we saw a persistent 504 from GitHub's centralindia edge). So we run
 # it only when this commit isn't installed yet, and retry when we do.
-if [ "$(cat "$STAMP" 2>/dev/null || true)" = "$COMMIT" ] && [ -n "$(store_python)" ] \
+if [ "$(cat "$STAMP" 2>/dev/null || true)" = "$STAMP_VALUE" ] && [ -n "$(store_python)" ] \
    && record_env && smoke_check >/dev/null 2>&1; then
   echo "→ Hermes @ ${COMMIT:0:7} already installed; skipping installer (no network)"
 else
@@ -116,7 +122,12 @@ else
     echo "  install failed; retrying in ${wait_s}s (known flaky upstream download, #147860)"
     sleep "$wait_s"
   done
-  printf '%s\n' "$COMMIT" > "$STAMP"
+  for extra in "${EXTRAS[@]}"; do
+    echo "→ Installing Hermes extra: $extra"
+    # Same entry point Hermes's own setup script uses (python -m pm.cli install).
+    (cd "$SRC" && PYTHONPATH="$SRC" "$(store_python)" -m pm.cli install --extra "$extra")
+  done
+  printf '%s\n' "$STAMP_VALUE" > "$STAMP"
   record_env
 fi
 
