@@ -1,6 +1,26 @@
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { z } from 'zod';
 
+// src/config or dist/config are both three levels below apps/api's parent.
+const REPO_ROOT = resolve(__dirname, '../../../..');
+
 const EnvSchema = z.object({
+  // ── Runner ──
+  /** Set false to boot the API without the worker (e.g. one-off checks). */
+  RUNNER_ENABLED: z.stringbool().default(true),
+  /** Runs executed at once. Each is a Hermes process making API calls. */
+  RUNNER_CONCURRENCY: z.coerce.number().int().min(1).max(32).default(4),
+  /** Parent directory for per-run scratch dirs (HERMES_HOME + workspace). */
+  RUNS_DIR: z.string().default(join(tmpdir(), 'agent-evals-runs')),
+  /** Keep run dirs after completion, for debugging. */
+  KEEP_RUN_DIRS: z.stringbool().default(false),
+  /** Written by runner/setup-hermes.sh: how to launch Hermes. */
+  HERMES_ENV_FILE: z.string().default(join(REPO_ROOT, 'runner', '.hermes-env.json')),
+  DRIVER_PATH: z.string().default(join(REPO_ROOT, 'runner', 'driver.py')),
+  /** Skill folders available to configs (suites/skills/<name>/SKILL.md). */
+  SKILLS_DIR: z.string().default(join(REPO_ROOT, 'suites', 'skills')),
+
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
