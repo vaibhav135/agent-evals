@@ -1,0 +1,6 @@
+# Golden attempt: a correct answer. Must pass every required grader (shipped-suites.spec.ts).
+sessions:
+  - response: "done"
+    toolCalls: []
+files:
+  hello.txt: "hi"
