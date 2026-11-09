@@ -20,6 +20,10 @@ const EnvSchema = z.object({
   DRIVER_PATH: z.string().default(join(REPO_ROOT, 'runner', 'driver.py')),
   /** Skill folders available to configs (suites/skills/<name>/SKILL.md). */
   SKILLS_DIR: z.string().default(join(REPO_ROOT, 'suites', 'skills')),
+  /** *.suite.yaml files, loaded at startup. */
+  SUITES_DIR: z.string().default(join(REPO_ROOT, 'suites')),
+  /** Agent config *.yaml files, loaded at startup. */
+  CONFIGS_DIR: z.string().default(join(REPO_ROOT, 'configs')),
 
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
