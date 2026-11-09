@@ -1,0 +1,9 @@
+# Golden attempt: a correct answer. Must pass every required grader (shipped-suites.spec.ts).
+sessions:
+  - response: "noted"
+    toolCalls: ["memory"]
+  - response: "Done."
+    toolCalls: []
+files:
+  ids.json: |
+    {"ids": ["L1", "L2", "L3", "L5", "L6", "L7", "L8"]}

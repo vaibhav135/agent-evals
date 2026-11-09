@@ -1,0 +1,9 @@
+# Golden attempt: a correct answer. Must pass every required grader (shipped-suites.spec.ts).
+sessions:
+  - response: "noted"
+    toolCalls: ["memory"]
+  - response: "Done."
+    toolCalls: []
+files:
+  subject.txt: |
+    Northwind Homes (NWH-4471): monthly report, October 2026
