@@ -1,0 +1,25 @@
+# Single-command local stack. The api and web services are added in
+# Phase 1, once the api image (Node + Python + pinned Hermes) exists.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: evals
+      POSTGRES_PASSWORD: evals
+      POSTGRES_DB: evals
+    # Host port 5433, not 5432, so it can't collide with (or silently be
+    # shadowed by) a locally installed Postgres. In-network clients still
+    # use postgres:5432.
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # Lets dependants wait for "accepting connections", not just "container started".
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evals -d evals"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+volumes:
+  pgdata:
