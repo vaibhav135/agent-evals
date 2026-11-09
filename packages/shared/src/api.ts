@@ -17,7 +17,6 @@ export const CreateExperimentRequest = z.strictObject({
   trialsPerTask: z.number().int().min(1).max(20),
   /** Bootstrap seed; random when omitted (and stored, so analysis is reproducible). */
   seed: z.number().int().min(1).max(2 ** 31 - 1).optional(),
-  concurrency: z.number().int().min(1).max(32).optional(),
 });
 export type CreateExperimentRequest = z.infer<typeof CreateExperimentRequest>;
 

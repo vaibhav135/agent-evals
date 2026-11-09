@@ -12,7 +12,11 @@ export class ZodPipe<T extends z.ZodType> implements PipeTransform<unknown, z.ou
   transform(value: unknown): z.output<T> {
     const result = this.schema.safeParse(value);
     if (!result.success) {
+      // Nest returns a custom body verbatim, so include the standard fields to
+      // keep one error shape across the API.
       throw new BadRequestException({
+        statusCode: 400,
+        error: 'Bad Request',
         message: 'Invalid request',
         issues: result.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
       });
