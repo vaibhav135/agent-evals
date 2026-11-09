@@ -1,0 +1,6 @@
+id,name,budget_inr,source,timeline,phone,email,whatsapp_consent,updated_at
+R1,Nikhil Rao,750000,referral,this_month,098200 11223,nikhil@mail.com,yes,2026-09-01
+R2,Nikhil R,300000,google_ads,this_quarter,+91 98200 11223,nikhil.r@mail.com,no,2026-10-01
+R3,Pooja Sen,200000,organic,this_month,12345,pooja@mail.com,no,2026-09-15
+R4,Qasim Mir,600000,google_ads,later,9811100009,qasim@mail.com,no,2026-08-01
+R5,Ritu Bhat,50000,cold_list,this_month,,ritu@mail.com,yes,2026-10-02

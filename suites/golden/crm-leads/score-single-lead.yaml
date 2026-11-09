@@ -1,0 +1,11 @@
+# Golden attempt: a correct answer. Must pass every required grader (shipped-suites.spec.ts).
+sessions:
+  - response: "Done."
+    toolCalls: ["skill_view"]
+files:
+  lead.json: |
+    {
+      "score": 80,
+      "tier": "hot",
+      "template": "T1-CALL-24H"
+    }

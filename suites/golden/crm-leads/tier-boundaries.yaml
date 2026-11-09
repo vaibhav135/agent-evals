@@ -1,0 +1,13 @@
+# Golden attempt: a correct answer. Must pass every required grader (shipped-suites.spec.ts).
+sessions:
+  - response: "Done."
+    toolCalls: ["skill_view"]
+files:
+  tiers.json: |
+    {
+      "B1": "hot",
+      "B2": "warm",
+      "B3": "warm",
+      "B4": "cold",
+      "B5": "hot"
+    }

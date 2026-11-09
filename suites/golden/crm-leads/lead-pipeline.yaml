@@ -1,0 +1,35 @@
+# Golden attempt: a correct answer. Must pass every required grader (shipped-suites.spec.ts).
+sessions:
+  - response: "Done."
+    toolCalls: ["skill_view"]
+files:
+  pipeline.json: |
+    {
+      "count": 4,
+      "leads": {
+        "R2": {
+          "phone": "+919820011223",
+          "score": 55,
+          "tier": "warm",
+          "template": "T2-EMAIL-3D"
+        },
+        "R3": {
+          "phone": "INVALID",
+          "score": 45,
+          "tier": "warm",
+          "template": "T2-EMAIL-3D"
+        },
+        "R4": {
+          "phone": "+919811100009",
+          "score": 60,
+          "tier": "warm",
+          "template": "T2-EMAIL-3D"
+        },
+        "R5": {
+          "phone": "INVALID",
+          "score": 10,
+          "tier": "cold",
+          "template": "T3-NURTURE-EMAIL"
+        }
+      }
+    }

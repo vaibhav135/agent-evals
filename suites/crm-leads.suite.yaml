@@ -1,0 +1,257 @@
+# CRM lead handling: does the crm-lead-handling skill help, and does it cost anything?
+#
+# skill tasks   need Brightline Realty's house rules (points, tiers, template
+#               codes, phone format, merge policy). Without the skill the agent
+#               can only guess, so these measure whether it finds and applies it.
+# control tasks are general data work on similar-looking CRM files. The skill
+#               should make NO difference here; a drop would mean it distracts
+#               (e.g. "normalising" phones that were asked to be copied verbatim).
+#
+# Every prompt spells out the output format but never the rules, so a failure
+# means "didn't apply the playbook", not "guessed the file layout wrong".
+# Expected values were computed by a reference implementation of the rules;
+# golden attempts live in suites/golden/crm-leads/.
+slug: crm-leads
+name: CRM lead handling
+description: Lead scoring, tiers, follow-up templates, phone normalisation and de-duplication (skill tasks) plus general CSV work (controls).
+version: 1
+tasks:
+  # ── skill tasks ────────────────────────────────────────────────────────────
+  - slug: score-single-lead
+    name: Score one lead
+    category: skill
+    prompt: |
+      A new lead came in for Brightline Realty:
+        budget_inr: 750000, source: referral, timeline: this_quarter,
+        phone: 98200 11223, whatsapp_consent: no
+      Apply our lead-handling playbook and write lead.json in the current
+      working directory as {"score": <integer>, "tier": "<tier>", "template": "<template code>"}.
+    timeoutS: 300
+    graders:
+      - { type: json_field, target: "file:lead.json", path: score, equals: 80 }
+      - { type: json_field, target: "file:lead.json", path: tier, equals: hot }
+      - { type: json_field, target: "file:lead.json", path: template, equals: T1-CALL-24H }
+      - { type: tool_called, tool: skill_view, required: false, description: "opened a skill (diagnostic)" }
+
+  - slug: score-leads-csv
+    name: Score a CSV of leads
+    category: skill
+    prompt: |
+      leads.csv in the current working directory has this week's Brightline Realty leads.
+      Apply our lead-handling playbook to every lead and write scored.json as an
+      object keyed by lead id:
+        {"L1": {"score": <integer>, "tier": "<tier>", "template": "<template code>"}, ...}
+    fixtures:
+      leads.csv: { file: fixtures/crm/leads.csv }
+    timeoutS: 300
+    graders:
+      - { type: json_field, target: "file:scored.json", path: L1, equals: { score: 90, tier: hot, template: T1-CALL-24H } }
+      - { type: json_field, target: "file:scored.json", path: L2, equals: { score: 55, tier: warm, template: T2-WHATSAPP-3D } }
+      - { type: json_field, target: "file:scored.json", path: L3, equals: { score: 60, tier: warm, template: T2-EMAIL-3D } }
+      - { type: json_field, target: "file:scored.json", path: L4, equals: { score: 0, tier: cold, template: T3-NURTURE-EMAIL }, description: "score floors at 0" }
+      - { type: json_field, target: "file:scored.json", path: L5, equals: { score: 55, tier: warm, template: T2-WHATSAPP-3D }, description: "budget exactly 500000" }
+      - { type: json_field, target: "file:scored.json", path: L6, equals: { score: 40, tier: warm, template: T2-EMAIL-3D }, description: "invalid phone penalty" }
+      - { type: json_field, target: "file:scored.json", path: L7, equals: { score: 40, tier: warm, template: T2-EMAIL-3D }, description: "missing budget" }
+      - { type: json_field, target: "file:scored.json", path: L8, equals: { score: 65, tier: warm, template: T2-WHATSAPP-3D } }
+      - { type: tool_called, tool: skill_view, required: false, description: "opened a skill (diagnostic)" }
+
+  - slug: tier-boundaries
+    name: Tier boundaries
+    category: skill
+    prompt: |
+      boundary-leads.csv in the current working directory has five Brightline Realty leads.
+      Using our lead-handling playbook, work out each lead's tier and write
+      tiers.json as {"B1": "<tier>", "B2": "<tier>", ...}.
+    fixtures:
+      boundary-leads.csv: { file: fixtures/crm/boundary-leads.csv }
+    timeoutS: 300
+    graders:
+      - { type: json_field, target: "file:tiers.json", path: B1, equals: hot, description: "score exactly 70" }
+      - { type: json_field, target: "file:tiers.json", path: B2, equals: warm, description: "score 65" }
+      - { type: json_field, target: "file:tiers.json", path: B3, equals: warm, description: "score exactly 40" }
+      - { type: json_field, target: "file:tiers.json", path: B4, equals: cold, description: "score 35" }
+      - { type: json_field, target: "file:tiers.json", path: B5, equals: hot, description: "75 after the phone penalty" }
+      - { type: tool_called, tool: skill_view, required: false, description: "opened a skill (diagnostic)" }
+
+  - slug: missing-phone-penalty
+    name: Missing phone penalty
+    category: skill
+    prompt: |
+      Three Brightline Realty leads are identical except for the phone number.
+      All have budget_inr 750000, source organic, timeline this_month, whatsapp_consent no.
+        P1 phone: 9876501234
+        P2 phone: (none given)
+        P3 phone: 98765
+      Apply our lead-handling playbook and write penalty.json as
+        {"P1": {"score": <integer>, "tier": "<tier>"}, "P2": {...}, "P3": {...}}.
+    timeoutS: 300
+    graders:
+      - { type: json_field, target: "file:penalty.json", path: P1, equals: { score: 75, tier: hot } }
+      - { type: json_field, target: "file:penalty.json", path: P2, equals: { score: 60, tier: warm }, description: "empty phone" }
+      - { type: json_field, target: "file:penalty.json", path: P3, equals: { score: 60, tier: warm }, description: "invalid phone counts as missing" }
+      - { type: tool_called, tool: skill_view, required: false, description: "opened a skill (diagnostic)" }
+
+  - slug: template-consent
+    name: Follow-up template and WhatsApp consent
+    category: skill
+    prompt: |
+      consent-leads.csv in the current working directory has five Brightline Realty leads.
+      Using our lead-handling playbook, pick each lead's follow-up template and
+      write templates.json as {"W1": "<template code>", ...}.
+    fixtures:
+      consent-leads.csv: { file: fixtures/crm/consent-leads.csv }
+    timeoutS: 300
+    graders:
+      - { type: json_field, target: "file:templates.json", path: W1, equals: T2-WHATSAPP-3D }
+      - { type: json_field, target: "file:templates.json", path: W2, equals: T2-EMAIL-3D, description: "warm, no consent" }
+      - { type: json_field, target: "file:templates.json", path: W3, equals: T2-EMAIL-3D, description: "warm, empty consent" }
+      - { type: json_field, target: "file:templates.json", path: W4, equals: T1-CALL-24H, description: "hot ignores consent" }
+      - { type: json_field, target: "file:templates.json", path: W5, equals: T3-NURTURE-EMAIL, description: "cold ignores consent" }
+      - { type: tool_called, tool: skill_view, required: false, description: "opened a skill (diagnostic)" }
+
+  - slug: normalize-phones
+    name: Normalise phone numbers
+    category: skill
+    prompt: |
+      phones.csv in the current working directory has raw phone numbers from
+      Brightline Realty's web forms. Normalise each one following our
+      lead-handling playbook and write normalized.json as {"N1": "<phone>", ...}.
+    fixtures:
+      phones.csv: { file: fixtures/crm/phones.csv }
+    timeoutS: 300
+    graders:
+      - { type: json_field, target: "file:normalized.json", path: N1, equals: "+919820011223" }
+      - { type: json_field, target: "file:normalized.json", path: N2, equals: "+919820011224" }
+      - { type: json_field, target: "file:normalized.json", path: N3, equals: "+919820011225", description: "brackets and trunk 0" }
+      - { type: json_field, target: "file:normalized.json", path: N4, equals: "+919820011226", description: "12 digits starting 91" }
+      - { type: json_field, target: "file:normalized.json", path: N5, equals: "+917820011227", description: "dots" }
+      - { type: json_field, target: "file:normalized.json", path: N6, equals: INVALID, description: "starts with 5" }
+      - { type: json_field, target: "file:normalized.json", path: N7, equals: INVALID, description: "too short" }
+      - { type: json_field, target: "file:normalized.json", path: N8, equals: INVALID, description: "non-Indian number" }
+      - { type: tool_called, tool: skill_view, required: false, description: "opened a skill (diagnostic)" }
+
+  - slug: dedupe-contacts
+    name: Merge duplicate contacts
+    category: skill
+    prompt: |
+      contacts.csv in the current working directory is Brightline Realty's contact
+      list. Merge duplicates following our lead-handling playbook and write
+      contacts.json as:
+        {"count": <number of contacts after merging>,
+         "contacts": {"<kept id>": {"phone": "<phone>", "email": "<email>", "tags": ["<tag>", ...]}, ...}}
+    fixtures:
+      contacts.csv: { file: fixtures/crm/contacts.csv }
+    timeoutS: 300
+    graders:
+      - { type: json_field, target: "file:contacts.json", path: count, equals: 5, description: "INVALID phones are not a match" }
+      - { type: json_field, target: "file:contacts.json", path: contacts.C2, equals: { phone: "+919820011223", email: asha.k@mail.com, tags: [buyer, vip] }, description: "same phone; newest record kept" }
+      - { type: json_field, target: "file:contacts.json", path: contacts.C3, equals: { phone: "+919811100001", email: ravi@mail.com, tags: [buyer, seller] }, description: "same email after trim/lowercase" }
+      - { type: json_field, target: "file:contacts.json", path: contacts.C8.tags, equals: [investor] }
+      - { type: json_field, target: "file:contacts.json", path: contacts.C6.phone, equals: INVALID }
+      - { type: tool_called, tool: skill_view, required: false, description: "opened a skill (diagnostic)" }
+
+  - slug: lead-pipeline
+    name: Full lead pipeline
+    category: skill
+    prompt: |
+      raw-leads.csv in the current working directory is a raw export of
+      Brightline Realty leads. Following our lead-handling playbook, merge
+      duplicates, normalise phones, then score each remaining lead and pick its
+      follow-up template. Write pipeline.json as:
+        {"count": <leads after merging>,
+         "leads": {"<kept id>": {"phone": "<phone>", "score": <integer>, "tier": "<tier>", "template": "<template code>"}, ...}}
+    fixtures:
+      raw-leads.csv: { file: fixtures/crm/raw-leads.csv }
+    timeoutS: 300
+    graders:
+      - { type: json_field, target: "file:pipeline.json", path: count, equals: 4 }
+      - { type: json_field, target: "file:pipeline.json", path: leads.R2, equals: { phone: "+919820011223", score: 55, tier: warm, template: T2-EMAIL-3D }, description: "duplicate of R1: newer record wins" }
+      - { type: json_field, target: "file:pipeline.json", path: leads.R3, equals: { phone: INVALID, score: 45, tier: warm, template: T2-EMAIL-3D } }
+      - { type: json_field, target: "file:pipeline.json", path: leads.R4, equals: { phone: "+919811100009", score: 60, tier: warm, template: T2-EMAIL-3D } }
+      - { type: json_field, target: "file:pipeline.json", path: leads.R5, equals: { phone: INVALID, score: 10, tier: cold, template: T3-NURTURE-EMAIL } }
+      - { type: tool_called, tool: skill_view, required: false, description: "opened a skill (diagnostic)" }
+
+  # ── control tasks (the skill should not matter) ────────────────────────────
+  - slug: deals-total
+    name: Total deal value
+    category: control
+    prompt: |
+      deals.csv in the current working directory lists deals. Compute the total
+      of the value_inr column over all rows and write total.json as {"total": <number>}.
+    fixtures:
+      deals.csv: { file: fixtures/crm/deals.csv }
+    timeoutS: 180
+    graders:
+      - { type: json_field, target: "file:total.json", path: total, equals: 2795000 }
+
+  - slug: won-deals
+    name: Filter won deals
+    category: control
+    prompt: |
+      deals.csv in the current working directory lists deals. Write won.json as
+      {"ids": [...]} with the ids of deals whose stage is "won", sorted ascending.
+    fixtures:
+      deals.csv: { file: fixtures/crm/deals.csv }
+    timeoutS: 180
+    graders:
+      - { type: json_field, target: "file:won.json", path: ids, equals: [D1, D3, D5, D8] }
+
+  - slug: stage-counts
+    name: Count deals by stage
+    category: control
+    prompt: |
+      deals.csv in the current working directory lists deals. Count the deals in
+      each stage and write counts.json as {"<stage>": <count>, ...}.
+    fixtures:
+      deals.csv: { file: fixtures/crm/deals.csv }
+    timeoutS: 180
+    graders:
+      - { type: json_field, target: "file:counts.json", path: won, equals: 4 }
+      - { type: json_field, target: "file:counts.json", path: lost, equals: 2 }
+      - { type: json_field, target: "file:counts.json", path: open, equals: 2 }
+
+  - slug: top-owner
+    name: Top owner by won value
+    category: control
+    prompt: |
+      deals.csv in the current working directory lists deals. Which owner has the
+      highest total value_inr across their won deals? Reply with the owner's name only.
+    fixtures:
+      deals.csv: { file: fixtures/crm/deals.csv }
+    timeoutS: 180
+    graders:
+      # Name only: an answer that lists every owner must not pass.
+      - { type: regex, pattern: "^\\W*arjun\\W*$", flags: i }
+
+  - slug: deals-to-json-verbatim
+    name: CSV to JSON, values verbatim
+    category: control
+    prompt: |
+      Convert deals.csv in the current working directory to deals.json: an object
+      keyed by deal id, each value {"owner": ..., "stage": ..., "value_inr": <number>,
+      "contact_phone": ...}. Copy contact_phone exactly as it appears in the CSV
+      (an empty cell becomes ""). Do not reformat it.
+    fixtures:
+      deals.csv: { file: fixtures/crm/deals.csv }
+    timeoutS: 180
+    graders:
+      - { type: json_field, target: "file:deals.json", path: D1, equals: { owner: Priya, stage: won, value_inr: 450000, contact_phone: "98200 11223" } }
+      - { type: json_field, target: "file:deals.json", path: D3.contact_phone, equals: "098111 22335", description: "not normalised" }
+      - { type: json_field, target: "file:deals.json", path: D7.contact_phone, equals: "919811122338", description: "not normalised" }
+      - { type: json_field, target: "file:deals.json", path: D6.contact_phone, equals: "" }
+
+  - slug: extract-emails
+    name: Extract emails from notes
+    category: control
+    prompt: |
+      meeting-notes.txt in the current working directory has call notes. Extract
+      every distinct email address, lowercase them, and write emails.json as
+      {"emails": [...]} sorted alphabetically.
+    fixtures:
+      meeting-notes.txt: { file: fixtures/crm/meeting-notes.txt }
+    timeoutS: 180
+    graders:
+      - type: json_field
+        target: "file:emails.json"
+        path: emails
+        equals: [anita.mehta@mail.com, kabir.mehta@mail.com, rohan_das@mail.com, sana.iqbal@corp.example.com, sana@iqbal-family.in]

@@ -1,0 +1,16 @@
+# Golden attempt: a correct answer. Must pass every required grader (shipped-suites.spec.ts).
+sessions:
+  - response: "Done."
+    toolCalls: ["skill_view"]
+files:
+  normalized.json: |
+    {
+      "N1": "+919820011223",
+      "N2": "+919820011224",
+      "N3": "+919820011225",
+      "N4": "+919820011226",
+      "N5": "+917820011227",
+      "N6": "INVALID",
+      "N7": "INVALID",
+      "N8": "INVALID"
+    }

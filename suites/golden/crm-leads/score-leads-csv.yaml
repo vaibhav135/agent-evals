@@ -1,0 +1,48 @@
+# Golden attempt: a correct answer. Must pass every required grader (shipped-suites.spec.ts).
+sessions:
+  - response: "Done."
+    toolCalls: ["skill_view"]
+files:
+  scored.json: |
+    {
+      "L1": {
+        "score": 90,
+        "tier": "hot",
+        "template": "T1-CALL-24H"
+      },
+      "L2": {
+        "score": 55,
+        "tier": "warm",
+        "template": "T2-WHATSAPP-3D"
+      },
+      "L3": {
+        "score": 60,
+        "tier": "warm",
+        "template": "T2-EMAIL-3D"
+      },
+      "L4": {
+        "score": 0,
+        "tier": "cold",
+        "template": "T3-NURTURE-EMAIL"
+      },
+      "L5": {
+        "score": 55,
+        "tier": "warm",
+        "template": "T2-WHATSAPP-3D"
+      },
+      "L6": {
+        "score": 40,
+        "tier": "warm",
+        "template": "T2-EMAIL-3D"
+      },
+      "L7": {
+        "score": 40,
+        "tier": "warm",
+        "template": "T2-EMAIL-3D"
+      },
+      "L8": {
+        "score": 65,
+        "tier": "warm",
+        "template": "T2-WHATSAPP-3D"
+      }
+    }

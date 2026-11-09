@@ -1,0 +1,13 @@
+# Golden attempt: a correct answer. Must pass every required grader (shipped-suites.spec.ts).
+sessions:
+  - response: "Done."
+    toolCalls: ["skill_view"]
+files:
+  templates.json: |
+    {
+      "W1": "T2-WHATSAPP-3D",
+      "W2": "T2-EMAIL-3D",
+      "W3": "T2-EMAIL-3D",
+      "W4": "T1-CALL-24H",
+      "W5": "T3-NURTURE-EMAIL"
+    }

@@ -1,0 +1,56 @@
+# Golden attempt: a correct answer. Must pass every required grader (shipped-suites.spec.ts).
+sessions:
+  - response: "Done."
+    toolCalls: []
+files:
+  deals.json: |
+    {
+      "D1": {
+        "owner": "Priya",
+        "stage": "won",
+        "value_inr": 450000,
+        "contact_phone": "98200 11223"
+      },
+      "D2": {
+        "owner": "Arjun",
+        "stage": "lost",
+        "value_inr": 120000,
+        "contact_phone": "+91-98111-22334"
+      },
+      "D3": {
+        "owner": "Priya",
+        "stage": "won",
+        "value_inr": 300000,
+        "contact_phone": "098111 22335"
+      },
+      "D4": {
+        "owner": "Neha",
+        "stage": "open",
+        "value_inr": 800000,
+        "contact_phone": "9811122336"
+      },
+      "D5": {
+        "owner": "Arjun",
+        "stage": "won",
+        "value_inr": 650000,
+        "contact_phone": "98111 22337"
+      },
+      "D6": {
+        "owner": "Neha",
+        "stage": "lost",
+        "value_inr": 90000,
+        "contact_phone": ""
+      },
+      "D7": {
+        "owner": "Priya",
+        "stage": "open",
+        "value_inr": 210000,
+        "contact_phone": "919811122338"
+      },
+      "D8": {
+        "owner": "Arjun",
+        "stage": "won",
+        "value_inr": 175000,
+        "contact_phone": "9811122339"
+      }
+    }
