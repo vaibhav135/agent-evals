@@ -13,6 +13,7 @@
  *   <runDir>/spec.json                    driver input
  *   <runDir>/result.json                  driver output
  */
+import { posix } from 'node:path';
 
 export interface RunConfig {
   model: string;
@@ -67,10 +68,98 @@ export interface RunPlan {
 }
 
 export function planRun(
-  _config: RunConfig,
-  _task: RunTask,
-  _paths: RunPaths,
-  _knownSkills: ReadonlySet<string>,
+  config: RunConfig,
+  task: RunTask,
+  paths: RunPaths,
+  knownSkills: ReadonlySet<string>,
 ): RunPlan {
-  throw new Error('not implemented');
+  // posix explicitly: these are paths inside a POSIX run dir (macOS/Linux/Docker),
+  // and the plan must not depend on the OS the API happens to run on.
+  const { join } = posix;
+  const homeDir = join(paths.runDir, 'home');
+  const workspaceDir = join(paths.runDir, 'workspace');
+  const specPath = join(paths.runDir, 'spec.json');
+  const outputPath = join(paths.runDir, 'result.json');
+
+  // A typo'd skill must fail loudly: silently running a skill-less "+skill"
+  // arm would make the experiment conclude the skill doesn't help.
+  const skills = [...new Set(config.skills)];
+  for (const name of skills) {
+    if (!knownSkills.has(name)) throw new Error(`unknown skill "${name}" (not found in the skills directory)`);
+  }
+
+  const memoryOn = config.memoryMode !== 'off';
+  if (config.memoryMode === 'seeded' && !config.memorySeed?.trim()) {
+    throw new Error('memoryMode "seeded" requires a non-empty memorySeed');
+  }
+
+  // Toolsets: `skills` in BOTH arms so only the skill's presence differs;
+  // `memory` only when memory is on; `delegation` never (#141318).
+  const enabled = new Set(config.toolsets);
+  enabled.add('skills');
+  enabled.delete('delegation');
+  if (memoryOn) enabled.add('memory');
+  else enabled.delete('memory');
+  const disabled = memoryOn ? ['delegation'] : ['delegation', 'memory'];
+
+  const hermesConfig = {
+    memory: {
+      // Explicit even when off: Hermes defaults both to true.
+      memory_enabled: memoryOn,
+      user_profile_enabled: memoryOn,
+      nudge_interval: 0,
+    },
+    skills: {
+      creation_nudge_interval: 0,
+      ...(config.skillMode === 'pinned' && skills.length ? { auto_load: skills } : {}),
+    },
+  };
+
+  const spec: DriverSpec = {
+    model: config.model,
+    provider: config.provider,
+    enabledToolsets: [...enabled].sort(),
+    disabledToolsets: disabled.sort(),
+    skipMemory: !memoryOn,
+    maxIterations: Math.min(config.maxIterations, task.maxIterations),
+    runBudgetSeconds: Math.min(config.runBudgetS, task.timeoutS),
+    workspace: workspaceDir,
+    sessions: task.sessions,
+    outputPath,
+  };
+
+  const fixtures = Object.entries(task.fixtures)
+    .map(([rel, content]) => ({ path: join(workspaceDir, safeFixturePath(rel)), content }))
+    .sort((a, b) => a.path.localeCompare(b.path));
+
+  // Fixed order (config, memory, fixtures, spec) so plans that mean the same
+  // thing compare equal; the single-variable test relies on it.
+  const files = [
+    // YAML 1.2 is a superset of JSON, so Hermes's YAML loader reads this as-is
+    // and we need no YAML library (or its quoting edge cases).
+    { path: join(homeDir, 'config.yaml'), content: JSON.stringify(hermesConfig, null, 2) },
+    ...(config.memoryMode === 'seeded' ? [{ path: join(homeDir, 'memories', 'MEMORY.md'), content: config.memorySeed! }] : []),
+    ...fixtures,
+    { path: specPath, content: JSON.stringify(spec, null, 2) },
+  ];
+
+  const copies = skills.map((name) => ({
+    from: join(paths.skillsSourceDir, name),
+    // Hermes reads the category from the parent folder; "custom" is neutral.
+    to: join(homeDir, 'skills', 'custom', name),
+  }));
+
+  return { homeDir, workspaceDir, specPath, outputPath, files, copies, spec };
+}
+
+/** Workspace-relative, normalised, and unable to escape the workspace. */
+function safeFixturePath(rel: string): string {
+  if (!rel.trim() || posix.isAbsolute(rel)) {
+    throw new Error(`fixture path ${JSON.stringify(rel)} must be a non-empty relative path`);
+  }
+  const normalised = posix.normalize(rel);
+  if (normalised === '.' || normalised === '..' || normalised.startsWith('../')) {
+    throw new Error(`fixture path ${JSON.stringify(rel)} escapes the workspace`);
+  }
+  return normalised;
 }
