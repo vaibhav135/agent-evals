@@ -10,7 +10,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "db:generate": "drizzle-kit generate",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:int": "TEST_DATABASE_URL=postgres://evals:evals@localhost:5433/evals_test vitest run src/**/*.int.spec.ts",
+    "test:live": "RUN_LIVE=1 TEST_DATABASE_URL=postgres://evals:evals@localhost:5433/evals_test vitest run src/**/*.e2e.spec.ts"
   },
   "dependencies": {
     "@agent-evals/shared": "workspace:*",

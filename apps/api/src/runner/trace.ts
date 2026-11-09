@@ -22,6 +22,8 @@ export interface NormalizedSession {
   /** Raw transcript, kept verbatim for the trace viewer. */
   messages: unknown[];
   availableTools: string[];
+  /** MEMORY.md / USER.md after this session (driver snapshot); null if none was taken. */
+  memorySnapshot: Record<string, string> | null;
   outcome: {
     completed: boolean;
     failed: boolean;
@@ -134,6 +136,9 @@ function normalizeSession(s: Record<string, unknown>, i: number): NormalizedSess
     toolCalls,
     messages,
     availableTools: Array.isArray(s.available_tools) ? s.available_tools.filter((t): t is string => typeof t === 'string') : [],
+    memorySnapshot: isRecord(s.memory_snapshot)
+      ? Object.fromEntries(Object.entries(s.memory_snapshot).filter((e): e is [string, string] => typeof e[1] === 'string'))
+      : null,
     outcome: {
       completed: s.completed === true,
       failed: s.failed === true,

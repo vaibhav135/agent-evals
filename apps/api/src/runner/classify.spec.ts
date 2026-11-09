@@ -12,6 +12,7 @@ function sessionWith(outcome: Partial<Outcome> = {}, exception: NormalizedSessio
     toolCalls: [],
     messages: [],
     availableTools: [],
+    memorySnapshot: null,
     outcome: {
       completed: true, failed: false, partial: false, error: null,
       failureReason: null, failureRetryable: null, turnExitReason: 'text_response(finish_reason=stop)',

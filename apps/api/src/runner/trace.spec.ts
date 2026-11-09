@@ -86,6 +86,14 @@ describe('normalizeResult edge cases', () => {
     expect(run.totals).toMatchObject({ inputTokens: 10, outputTokens: 7, cacheReadTokens: 0, apiCalls: 1, durationMs: 11 });
   });
 
+  it('passes through the per-session memory snapshot (null when the driver took none)', () => {
+    const run = normalizeResult({
+      sessions: [session(), session({ index: 1, memory_snapshot: { 'MEMORY.md': 'Client prefers WhatsApp', junk: 42 } })],
+    });
+    expect(run.sessions[0]!.memorySnapshot).toBeNull();
+    expect(run.sessions[1]!.memorySnapshot).toEqual({ 'MEMORY.md': 'Client prefers WhatsApp' });
+  });
+
   it('captures a driver-caught exception (harness crash)', () => {
     const run = normalizeResult({
       sessions: [{ index: 0, prompt: 'p', duration_ms: 3, exception: { type: 'ImportError', message: 'no anthropic', traceback: '…' } }],
