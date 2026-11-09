@@ -1,0 +1,15 @@
+# Golden attempt: a correct answer. Must pass every required grader (shipped-suites.spec.ts).
+sessions:
+  - response: "Done."
+    toolCalls: []
+files:
+  emails.json: |
+    {
+      "emails": [
+        "anita.mehta@mail.com",
+        "kabir.mehta@mail.com",
+        "rohan_das@mail.com",
+        "sana.iqbal@corp.example.com",
+        "sana@iqbal-family.in"
+      ]
+    }

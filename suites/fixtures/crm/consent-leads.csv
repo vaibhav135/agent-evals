@@ -1,0 +1,6 @@
+id,name,budget_inr,source,timeline,phone,whatsapp_consent
+W1,Farah Khan,300000,google_ads,this_quarter,9830000001,yes
+W2,Gaurav Pillai,300000,google_ads,this_quarter,9830000002,no
+W3,Hema Reddy,300000,google_ads,this_quarter,9830000003,
+W4,Imran Ali,750000,referral,this_month,9830000004,no
+W5,Jaya Kulkarni,50000,cold_list,later,9830000005,yes

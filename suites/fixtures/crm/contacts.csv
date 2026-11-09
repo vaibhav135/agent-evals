@@ -1,0 +1,9 @@
+id,name,phone,email,tags,updated_at
+C1,Asha Verma,98200 11223,asha@brightmail.in,buyer,2026-09-01
+C2,Asha K Verma,+91 98200 11223,ASHA.K@mail.com,vip,2026-10-05
+C3,Ravi Sharma,9811100001,ravi@mail.com,seller,2026-08-01
+C4,Ravi S,9811100002, Ravi@Mail.com ,buyer;seller,2026-07-15
+C5,Meera Pillai,12345,meera@mail.com,renter,2026-09-20
+C6,Meera P,54321,meera.p@mail.com,buyer,2026-09-21
+C7,Dev Malhotra,9811100003,dev@mail.com,,2026-10-01
+C8,Dev M,9811100004,DEV@mail.com,investor,2026-10-10

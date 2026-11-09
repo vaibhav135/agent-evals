@@ -1,0 +1,83 @@
+# Memory: does Hermes carry a fact or preference from one session to the next?
+#
+# Each task has two sessions on the same HERMES_HOME. Session 1 states
+# something; session 2 needs it but does not repeat it. Without memory the
+# agent can only guess, so the baseline should fail all four (by design).
+# Compare haiku-baseline vs haiku-memory on this suite. Graders look at the
+# last session; a non-required grader records whether the agent saved to
+# memory in session 1, which is the first thing to check when B fails.
+slug: memory
+name: Cross-session memory
+description: Two-session tasks where session 2 depends on something said only in session 1.
+version: 1
+tasks:
+  - slug: report-prefix
+    name: Remembered file-name prefix
+    category: memory
+    sessions:
+      - |
+        For all future sessions: every report file you write for me must start
+        with the prefix q4_ (for example q4_summary.json). Please remember this.
+        Reply with the single word: noted
+      - |
+        leads.csv is in the current working directory. Count the leads (rows,
+        not counting the header) and write {"count": <number>} to a report file
+        named lead_count.json, with my usual report prefix.
+    fixtures:
+      leads.csv: { file: fixtures/crm/leads.csv }
+    timeoutS: 180
+    graders:
+      - { type: json_field, target: "file:q4_lead_count.json", path: count, equals: 8 }
+      - { type: tool_called, tool: memory, session: 0, required: false, description: "saved to memory in session 1 (diagnostic)" }
+
+  - slug: client-account-code
+    name: Remembered account code
+    category: memory
+    sessions:
+      - |
+        Our client on this project is Northwind Homes and their account code is
+        NWH-4471. Please remember this for future sessions.
+        Reply with the single word: noted
+      - |
+        Write subject.txt in the current working directory containing a one-line
+        email subject for the client's monthly report. It must include the
+        client's account code.
+    timeoutS: 180
+    graders:
+      - { type: contains, target: "file:subject.txt", value: NWH-4471, caseSensitive: true }
+      - { type: tool_called, tool: memory, session: 0, required: false, description: "saved to memory in session 1 (diagnostic)" }
+
+  - slug: standup-time-utc
+    name: Remembered time zone
+    category: memory
+    sessions:
+      - |
+        For future sessions: I'm based in Pune (IST, UTC+5:30) and my daily
+        standup is at 09:30 my local time. Please remember this.
+        Reply with the single word: noted
+      - |
+        My manager works in UTC. What time is my daily standup in UTC?
+        Reply with the time as HH:MM only.
+    timeoutS: 180
+    graders:
+      - { type: regex, pattern: "^\\W*04:00\\W*$" }
+      - { type: tool_called, tool: memory, session: 0, required: false, description: "saved to memory in session 1 (diagnostic)" }
+
+  - slug: exclude-cold-list
+    name: Remembered standing preference
+    category: memory
+    sessions:
+      - |
+        A standing preference for all future sessions: never include leads whose
+        source is cold_list in anything you give me. Please remember this.
+        Reply with the single word: noted
+      - |
+        leads.csv is in the current working directory. Write ids.json as
+        {"ids": [...]} with the lead ids, sorted ascending, following my
+        standing preferences.
+    fixtures:
+      leads.csv: { file: fixtures/crm/leads.csv }
+    timeoutS: 180
+    graders:
+      - { type: json_field, target: "file:ids.json", path: ids, equals: [L1, L2, L3, L5, L6, L7, L8] }
+      - { type: tool_called, tool: memory, session: 0, required: false, description: "saved to memory in session 1 (diagnostic)" }

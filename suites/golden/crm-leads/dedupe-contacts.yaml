@@ -1,0 +1,48 @@
+# Golden attempt: a correct answer. Must pass every required grader (shipped-suites.spec.ts).
+sessions:
+  - response: "Done."
+    toolCalls: ["skill_view"]
+files:
+  contacts.json: |
+    {
+      "count": 5,
+      "contacts": {
+        "C2": {
+          "phone": "+919820011223",
+          "email": "asha.k@mail.com",
+          "tags": [
+            "buyer",
+            "vip"
+          ]
+        },
+        "C3": {
+          "phone": "+919811100001",
+          "email": "ravi@mail.com",
+          "tags": [
+            "buyer",
+            "seller"
+          ]
+        },
+        "C5": {
+          "phone": "INVALID",
+          "email": "meera@mail.com",
+          "tags": [
+            "renter"
+          ]
+        },
+        "C6": {
+          "phone": "INVALID",
+          "email": "meera.p@mail.com",
+          "tags": [
+            "buyer"
+          ]
+        },
+        "C8": {
+          "phone": "+919811100004",
+          "email": "dev@mail.com",
+          "tags": [
+            "investor"
+          ]
+        }
+      }
+    }

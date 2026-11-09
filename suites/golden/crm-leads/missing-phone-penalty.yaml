@@ -1,0 +1,20 @@
+# Golden attempt: a correct answer. Must pass every required grader (shipped-suites.spec.ts).
+sessions:
+  - response: "Done."
+    toolCalls: ["skill_view"]
+files:
+  penalty.json: |
+    {
+      "P1": {
+        "score": 75,
+        "tier": "hot"
+      },
+      "P2": {
+        "score": 60,
+        "tier": "warm"
+      },
+      "P3": {
+        "score": 60,
+        "tier": "warm"
+      }
+    }

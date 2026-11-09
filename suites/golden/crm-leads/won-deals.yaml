@@ -1,0 +1,14 @@
+# Golden attempt: a correct answer. Must pass every required grader (shipped-suites.spec.ts).
+sessions:
+  - response: "Done."
+    toolCalls: []
+files:
+  won.json: |
+    {
+      "ids": [
+        "D1",
+        "D3",
+        "D5",
+        "D8"
+      ]
+    }

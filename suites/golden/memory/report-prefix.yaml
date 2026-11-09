@@ -1,0 +1,9 @@
+# Golden attempt: a correct answer. Must pass every required grader (shipped-suites.spec.ts).
+sessions:
+  - response: "noted"
+    toolCalls: ["memory"]
+  - response: "Done."
+    toolCalls: []
+files:
+  q4_lead_count.json: |
+    {"count": 8}
