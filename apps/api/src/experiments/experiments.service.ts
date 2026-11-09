@@ -4,14 +4,17 @@ import { and, asc, desc, eq, inArray, sql, sum } from 'drizzle-orm';
 import {
   AgentConfigSnapshot,
   type CreateExperimentRequest,
+  type ExperimentAnalysis,
   type ExperimentSummary,
   type RunStatus,
+  type RunSummary,
   type TaskSnapshot,
 } from '@agent-evals/shared';
 import { ENV, type Env } from '../config/env';
 import { DB, type Db } from '../db/db.module';
 import * as schema from '../db/schema';
 import { loadHermesEnv } from '../runner/hermes-env';
+import { buildAnalysis } from './analysis';
 import { expandExperiment } from './expand';
 
 const RUN_STATUSES: RunStatus[] = ['queued', 'running', 'passed', 'failed', 'agent_error', 'timeout', 'infra_error'];
@@ -154,6 +157,61 @@ export class ExperimentsService {
     };
   }
 
+  /** Statistics over the experiment's finished runs (recomputed on every call; nothing derived is stored). */
+  async analysis(id: string): Promise<ExperimentAnalysis> {
+    const summary = await this.get(id); // 404 if missing
+    const arms = await this.db.select().from(schema.experimentArms).where(eq(schema.experimentArms.experimentId, id));
+    const runs = await this.db
+      .select({
+        armId: schema.runs.armId,
+        taskId: schema.runs.taskId,
+        status: schema.runs.status,
+        costUsd: schema.runs.costUsd,
+        durationMs: schema.runs.durationMs,
+        inputTokens: schema.runs.inputTokens,
+        outputTokens: schema.runs.outputTokens,
+        cacheReadTokens: schema.runs.cacheReadTokens,
+        cacheWriteTokens: schema.runs.cacheWriteTokens,
+      })
+      .from(schema.runs)
+      .where(eq(schema.runs.experimentId, id));
+    const taskIds = [...new Set(runs.map((r) => r.taskId))];
+    const tasks = taskIds.length
+      ? await this.db
+          .select({ id: schema.tasks.id, slug: schema.tasks.slug, name: schema.tasks.name, category: schema.tasks.category })
+          .from(schema.tasks)
+          .where(inArray(schema.tasks.id, taskIds))
+      : [];
+
+    return buildAnalysis({
+      experimentId: id,
+      seed: summary.seed,
+      arms: arms.map((a) => ({
+        id: a.id,
+        label: a.label as 'A' | 'B',
+        configSlug: AgentConfigSnapshot.parse(a.configSnapshot).slug,
+      })),
+      tasks,
+      runs,
+    });
+  }
+
+  /** Runs of an experiment, optionally filtered, for the per-task drill-down. */
+  async runs(id: string, filter: { task?: string; arm?: string }): Promise<RunSummary[]> {
+    await this.get(id); // 404 if missing
+    const conditions = [eq(schema.runs.experimentId, id)];
+    if (filter.task) conditions.push(eq(schema.tasks.slug, filter.task));
+    if (filter.arm) conditions.push(eq(schema.experimentArms.label, filter.arm));
+    const rows = await this.db
+      .select({ run: schema.runs, taskSlug: schema.tasks.slug, arm: schema.experimentArms.label })
+      .from(schema.runs)
+      .innerJoin(schema.tasks, eq(schema.tasks.id, schema.runs.taskId))
+      .innerJoin(schema.experimentArms, eq(schema.experimentArms.id, schema.runs.armId))
+      .where(and(...conditions))
+      .orderBy(asc(schema.tasks.slug), asc(schema.runs.trialIndex), asc(schema.experimentArms.label));
+    return rows.map(({ run, taskSlug, arm }) => toRunSummary(run, taskSlug, arm));
+  }
+
   private async transition(
     id: string,
     from: (typeof schema.experiments.$inferSelect.status)[],
@@ -180,4 +238,20 @@ export class ExperimentsService {
       return 'unknown';
     }
   }
+}
+
+export function toRunSummary(run: typeof schema.runs.$inferSelect, taskSlug: string, arm: string): RunSummary {
+  return {
+    id: run.id,
+    arm: arm as 'A' | 'B',
+    taskSlug,
+    trialIndex: run.trialIndex,
+    status: run.status,
+    passed: run.passed,
+    score: run.score,
+    attempt: run.attempt,
+    costUsd: run.costUsd,
+    durationMs: run.durationMs,
+    errorKind: run.errorKind,
+  };
 }
