@@ -1,4 +1,4 @@
-import { tmpdir } from 'node:os';
+import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { z } from 'zod';
 
@@ -11,8 +11,20 @@ const EnvSchema = z.object({
   RUNNER_ENABLED: z.stringbool().default(true),
   /** Runs executed at once. Each is a Hermes process making API calls. */
   RUNNER_CONCURRENCY: z.coerce.number().int().min(1).max(32).default(4),
-  /** Parent directory for per-run scratch dirs (HERMES_HOME + workspace). */
-  RUNS_DIR: z.string().default(join(tmpdir(), 'agent-evals-runs')),
+  /**
+   * Parent directory for per-run scratch dirs (HERMES_HOME + workspace).
+   * Under $HOME, not the system temp dir: Docker Desktop / colima only share
+   * $HOME with their VM, and a bind mount of an unshared path is silently empty.
+   */
+  RUNS_DIR: z.string().default(join(homedir(), '.cache', 'agent-evals-runs')),
+  /**
+   * Where the agent's tools run. `docker` (default) confines file and terminal
+   * tools to a throwaway container that sees only the run's workspace; `local`
+   * runs them on this machine with full access to it (see docs/limits).
+   */
+  SANDBOX: z.enum(['docker', 'local']).default('docker'),
+  /** Image for the docker sandbox. Needs python3 (agents script in it). */
+  SANDBOX_IMAGE: z.string().min(1).default('python:3.13-slim'),
   /** Keep run dirs after completion, for debugging. */
   KEEP_RUN_DIRS: z.stringbool().default(false),
   /** Written by runner/setup-hermes.sh: how to launch Hermes. */

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { planRun, type RunConfig, type RunPlan, type RunTask } from './plan-run';
 
-const paths = { runDir: '/runs/r1', skillsSourceDir: '/repo/suites/skills' };
+const sandbox = { kind: 'docker', image: 'python:3.13-slim' } as const;
+const paths = { runDir: '/runs/r1', skillsSourceDir: '/repo/suites/skills', sandbox };
 const knownSkills = new Set(['crm-lead-handling', 'other-skill']);
 
 const baseConfig: RunConfig = {
@@ -155,4 +156,31 @@ describe('fixtures', () => {
       expect(() => plan({}, { fixtures: { [bad]: 'x' } })).toThrow(/fixture/i);
     },
   );
+});
+
+describe('sandbox', () => {
+  // Without this the agent's file and terminal tools see the whole host: in the
+  // pilot the baseline found suites/skills/.../SKILL.md in the repo and read it.
+  it('docker: tools run in a throwaway container that sees only the workspace', () => {
+    expect(hermesConfig(plan()).terminal).toEqual({
+      backend: 'docker',
+      docker_image: 'python:3.13-slim',
+      // The workspace (and nothing else) is bind-mounted at /workspace. An
+      // explicit volume, not docker_mount_cwd_to_workspace: that one follows the
+      // process cwd / TERMINAL_CWD, and containers created later in a run (other
+      // task ids) came up without the mount: the agent saw an empty workspace.
+      docker_volumes: ['/runs/r1/workspace:/workspace'],
+      cwd: '/workspace',
+      // A fresh container per run: no state shared between runs or arms.
+      container_persistent: false,
+      docker_persist_across_processes: false,
+      // Tasks need no network; also stops fetching answers from elsewhere.
+      docker_network: false,
+    });
+  });
+
+  it('local: explicit opt-out runs tools on the host, in the workspace', () => {
+    const p = planRun(baseConfig, baseTask, { ...paths, sandbox: { kind: 'local' } }, knownSkills);
+    expect(hermesConfig(p).terminal).toEqual({ backend: 'local', cwd: '/runs/r1/workspace' });
+  });
 });
