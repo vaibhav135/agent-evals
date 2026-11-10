@@ -6,6 +6,7 @@
     "packages/*"
   ],
   "scripts": {
+    "start": "./scripts/start.sh",
     "build:shared": "bun run --filter @agent-evals/shared build",
     "dev:api": "bun run --filter @agent-evals/api dev",
     "dev:web": "bun run --filter @agent-evals/web dev",
