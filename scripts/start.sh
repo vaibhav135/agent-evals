@@ -21,6 +21,14 @@ docker info >/dev/null 2>&1 || die "Docker is not running. Start Docker Desktop 
 if docker compose version >/dev/null 2>&1; then COMPOSE=(docker compose); else COMPOSE=(docker-compose); fi
 command -v "${COMPOSE[0]}" >/dev/null || die "docker compose is required"
 
+# Fail fast if something already holds our ports: otherwise the new API dies
+# with EADDRINUSE while the health check below passes against the OLD one.
+for port in 3000 5173; do
+  if pid=$(lsof -ti "tcp:$port" -sTCP:LISTEN 2>/dev/null) && [ -n "$pid" ]; then
+    die "Port $port is in use by pid $pid ($(ps -o command= -p "${pid%%$'\n'*}" | cut -c1-60)). Stop it (kill $pid) and rerun."
+  fi
+done
+
 [ -f .env ] || { cp .env.example .env; die "Created .env from .env.example: set ANTHROPIC_API_KEY in it, then rerun."; }
 # Checks the key is non-empty without printing it.
 grep -Eq '^ANTHROPIC_API_KEY=.+' .env || die "Set ANTHROPIC_API_KEY in .env, then rerun."
