@@ -1,12 +1,13 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
+import tailwindcss from '@tailwindcss/vite';
 
 // Where the Nest API lives. Locally that's :3000; in docker compose it's the
 // `api` service, passed in via API_PROXY_TARGET.
 const apiTarget = process.env.API_PROXY_TARGET ?? 'http://localhost:3000';
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [vue(), tailwindcss()],
   server: {
     host: true,
     port: 5173,
